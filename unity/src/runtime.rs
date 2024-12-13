@@ -140,24 +140,65 @@ pub trait Runtime {
 
 /// looks up the runtime
 pub fn get_runtime() -> Result<FerrexRuntime, RuntimeError> {
-    let exe_path = std::env::current_exe()?;
+    // 1. 현재 실행 파일 경로 체크
+    let exe_path = match std::env::current_exe() {
+        Ok(path) => {
+            println!("Executable path: {:?}", path);
+            path
+        },
+        Err(e) => {
+            println!("Failed to get executable path: {:?}", e);
+            return Err(e.into());
+        }
+    };
+
+    // 2. Unity 프로세스인지 확인
     if !is_unity(&exe_path)? {
+        println!("Not a Unity process!");
         return Err(RuntimeError::NotUnity);
     }
+    println!("Unity process confirmed");
 
+    // 3. base_path 체크
     let base_path = exe_path
         .parent()
-        .ok_or(RuntimeError::BasePathNotFound)?
+        .ok_or_else(|| {
+            println!("Base path not found!");
+            RuntimeError::BasePathNotFound
+        })?
         .to_path_buf();
-    let data_path = utils::path::get_data_path(&exe_path)?;
+    println!("Base path: {:?}", base_path);
 
+    // 4. data_path 체크
+    let data_path = match utils::path::get_data_path(&exe_path) {
+        Ok(path) => {
+            println!("Data path: {:?}", path);
+            path
+        },
+        Err(e) => {
+            println!("Failed to get data path: {:?}", e);
+            return Err(e);
+        }
+    };
+
+    // 5. Mono 경로 찾기
     let mono = utils::path::find_mono(&base_path, &data_path);
+    println!("Mono path result: {:?}", mono);
 
+    // 6. Runtime 초기화
     if let Ok(mono_path) = mono {
+        println!("Attempting to initialize Mono runtime from: {:?}", mono_path);
         let mono = Mono::new(mono_path)?;
         Ok(Box::new(mono) as Box<dyn Runtime + Send + Sync>)
     } else {
-        let il2cpp = Il2Cpp::new(base_path)?;
+        println!("Mono not found, attempting to initialize Il2Cpp runtime");
+        let il2cpp = match Il2Cpp::new(base_path) {
+            Ok(runtime) => runtime,
+            Err(e) => {
+                println!("Failed to initialize Il2Cpp runtime: {:?}", e);
+                return Err(e);
+            }
+        };
         Ok(Box::new(il2cpp) as Box<dyn Runtime + Send + Sync>)
     }
 }
