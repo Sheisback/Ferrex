@@ -39,20 +39,46 @@ unsafe impl Sync for Il2Cpp {}
 
 impl Il2Cpp {
     pub fn new(base_path: PathBuf) -> Result<Self, RuntimeError> {
+        println!("Attempting to initialize Il2Cpp with base path: {:?}", base_path);
+        
         let game_assembly_path = join_dll_path!(base_path, "GameAssembly");
+        println!("GameAssembly path: {:?}", game_assembly_path);
 
         if !game_assembly_path.exists() {
+            println!("GameAssembly.dll not found at path!");
             return Err(RuntimeError::GameAssemblyNotFound);
         }
+        println!("GameAssembly.dll found");
 
-        let lib = libs::load_lib(&game_assembly_path)?;
+        println!("Attempting to load GameAssembly.dll...");
+        let lib = match libs::load_lib(&game_assembly_path) {
+            Ok(lib) => {
+                println!("Successfully loaded GameAssembly.dll");
+                lib
+            },
+            Err(e) => {
+                println!("Failed to load GameAssembly.dll: {:?}", e);
+                return Err(e.into());
+            }
+        };
 
-        let exports = Il2CppExports::new(&lib)?;
+        println!("Initializing Il2Cpp exports...");
+        let exports = match Il2CppExports::new(&lib) {
+            Ok(exports) => {
+                println!("Successfully initialized Il2Cpp exports");
+                exports
+            },
+            Err(e) => {
+                println!("Failed to initialize Il2Cpp exports: {:?}", e);
+                return Err(e);
+            }
+        };
 
         let il2cpp = Il2Cpp {
             game_assembly: lib,
             exports,
         };
+        println!("Il2Cpp initialization completed successfully");
         Ok(il2cpp)
     }
 }
