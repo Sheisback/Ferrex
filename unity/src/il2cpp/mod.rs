@@ -58,7 +58,7 @@ impl Il2Cpp {
             },
             Err(e) => {
                 println!("Failed to load GameAssembly.dll: {:?}", e);
-                return Err(e.into());
+                return Err(RuntimeError::Lib(e));  // LibError를 RuntimeError::Lib로 변환
             }
         };
 
