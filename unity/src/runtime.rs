@@ -185,7 +185,7 @@ pub fn get_runtime() -> Result<FerrexRuntime, RuntimeError> {
         let il2cpp = match Il2Cpp::new(base_path) {
             Ok(runtime) => runtime,
             Err(e) => {
-                println!("Il2Cpp basePath {:?}", base_path);
+                println!("Il2Cpp basePath {:?}", &base_path);
                 println!("Failed to initialize Il2Cpp runtime: {:?}", e);
                 return Err(e);
             }
