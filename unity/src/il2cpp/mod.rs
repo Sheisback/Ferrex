@@ -70,7 +70,7 @@ impl Il2Cpp {
             },
             Err(e) => {
                 println!("Failed to initialize Il2Cpp exports: {:?}", e);
-                return Err(e);
+                return Err(RuntimeError::Lib(e));
             }
         };
 
